@@ -1,25 +1,142 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+#Reproducible Research Course Project-1
+
+###1. Reading and Processing Data:
+Data is downloaded to working directory. Below code reads data into R from working directory. Missing values are omitted and this is verified using functions like nrow(), head() etc.
+
+```{r Reading and Processing Data, echo = TRUE}
+
+OriginalData <- read.csv("activity.csv")
+nrow(OriginalData)
+MyData <- na.omit(OriginalData)  
+nrow(MyData)
+head(MyData)
+summary(MyData)
+
+```
+
+###2.Histogram of the total number of steps taken each day
+Below Code initially calculates total steps taken per day using aggregate function. ggplot is used to plot histogram.
+
+```{r Histogram of the total number of steps taken each day, echo = TRUE}
+names(MyData)
+MyData$date <- as.factor(MyData$date)
+StepsPerDay <- aggregate(steps ~ date, MyData, sum)
+head(StepsPerDay)
+library(ggplot2)
+ggplot(StepsPerDay,aes(x = steps))+ geom_histogram(fill = "red",col=I("black"), bins = 5) + xlab("Steps Per Day") + ylab("Frequency") + ggtitle("Number of Steps Per Day")
+
+```
+
+###3. Mean and median number of steps taken each day
 
 
-## Loading and preprocessing the data
+```{r Mean and median number of steps taken each day, echo = TRUE}
+MeanOfSteps <- mean(StepsPerDay$steps)
+MedianOfSteps <- median(StepsPerDay$steps)
+```
+Mean of steps taken each day = `r MeanOfSteps` and Median of steps taken each day = `r MedianOfSteps`
+
+###4.Time series plot of the average number of steps taken
+
+
+```{r Time series plot of the average number of steps taken, echo = TRUE}
+
+#typeof(MyData$date)
+#head(MyData)
+#MyData$date <- as.Date(MyData$date, "%d-%m%-%y")
+#typeof(MyData$date)
+
+StepsPerInterval <- aggregate(steps ~ interval, MyData, mean)
+head(StepsPerInterval)
+plot(StepsPerInterval$interval,StepsPerInterval$steps,type="l", xlab="Interval", ylab="Number of Steps", main="Average Number of Steps")
+
+```
+
+###5.The 5-minute interval that, on average, contains the maximum number of steps
+We use StepsPerInterval dataframe from above code chunk, which includes total number of steps per interval
+
+```{r 5-minute interval that, on average, contains the maximum number of steps, echo = TRUE}
+MaxVal <- StepsPerInterval[which.max(StepsPerInterval$steps),]
+MaxInterval <- MaxVal[1]
+
+```
+The 5-minute interval that, on average, contains the maximum number of steps is `r MaxInterval`
+
+
+###6.Code to describe and show a strategy for imputing missing data
+
+
+```{r Code to describe and show a strategy for imputing missing data, echo = TRUE}
+MissingValues <- sum(is.na(OriginalData))
+print(MissingValues)
+UpdatedData <- data.frame()
+UpdatedData <- rbind(UpdatedData,OriginalData)
+head(UpdatedData)
+nrow(UpdatedData)
+names(UpdatedData)
+UpdatedData$steps[is.na(UpdatedData$steps)] = mean(UpdatedData$steps, na.rm=TRUE)
+sum(is.na(UpdatedData)) # This code returns value 0 which implies missing values are replaced
+head(UpdatedData)
+###UpdatedData$steps <- ceiling(UpdatedData$steps)
+nrow(UpdatedData) 
+##total number of steps taken after replacing missing values
+
+names(UpdatedData)
+
+UpdatedData$date <- as.factor(UpdatedData$date)
+StepsPerDayUpdated <- aggregate(steps ~ date, UpdatedData, sum)
+head(StepsPerDayUpdated)
+
+```
+
+There are `r MissingValues` missing values. Code replaces these missing values with mean of interval.
+Replacing missing values with zero indicates that there are no steps for that interval so I have considered replacing 
+missing values with the mean of steps. There is slight difference in the mean number of steps after imputing missing values as we have replaced with mean of number of steps per day, which is shown in next step.
+
+
+###7.Histogram of the total number of steps taken each day after missing values are imputed
+
+```{r Histogram of the total number of steps taken each day after missing values are imputed, echo = TRUE}
+
+ggplot(StepsPerDayUpdated,aes(x = steps))+ geom_histogram(fill = "blue",col=I("black"), bins = 5) + xlab("Steps Per Day") + ylab("Frequency") + ggtitle("Number of Steps Per Day after replacing missing values")
+UpdatedMeanOfSteps <- mean(StepsPerDayUpdated$steps)
+UpdatedMedianOfSteps <- median(StepsPerDayUpdated$steps)
+
+```
+
+Mean after imputing missing values = `r UpdatedMeanOfSteps` and median = `r UpdatedMedianOfSteps`
+
+###8.Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+
+Here, we first create dataframe WeekData same as the imputed data frame and we add variable day based on the date. We then add new 
+factor variable daytype which holds values weekday or weekend based on the day.
+ 
+```{r Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends, echo = TRUE}
+WeekData <- data.frame()
+WeekData <- rbind(WeekData,UpdatedData)
+head(WeekData)
+WeekData$date <- as.factor(WeekData$date)
+WeekData$date <- as.Date(WeekData$date, "%Y-%m-%d")
+typeof(WeekData$date)
+WeekData$day <- weekdays(WeekData$date)
+head(WeekData)
+vector.weekdays <- c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+WeekData$daytype <- factor(WeekData$day %in% vector.weekdays, levels = c(TRUE,FALSE), labels = c("weekday", "weekend"))
+head(WeekData)
+
+newinterval <- aggregate(steps ~ interval + daytype, WeekData, mean)
+head(newinterval)
+levels(WeekData$daytype)
+
+ggplot(newinterval, aes(x =interval ,y = steps), color = "blue") +
+  geom_line() +
+  labs(title = "Average Daily Steps by Daytype", x = "Interval", y = "Number of Steps") +
+  facet_wrap(~daytype, ncol = 1, nrow=2)
+```
 
 
 
-## What is mean total number of steps taken per day?
 
 
 
-## What is the average daily activity pattern?
 
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
