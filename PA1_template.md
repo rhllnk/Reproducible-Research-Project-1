@@ -6,18 +6,6 @@ Data is downloaded to working directory. Below code reads data into R from worki
 
 ```r
 OriginalData <- read.csv("activity.csv")
-```
-
-```
-## Warning in file(file, "rt"): cannot open file 'activity.csv': No such file
-## or directory
-```
-
-```
-## Error in file(file, "rt"): cannot open the connection
-```
-
-```r
 nrow(OriginalData)
 ```
 
